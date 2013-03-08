@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use Getopt::Long;
-#use Pod::Usage;  #implement this later
+use Pod::Usage;  #implement this later
 
 =head1 NAME
 openfile.pl    
@@ -12,8 +12,15 @@ openfile.pl [options] [file]
 
 	Options:
 		-force	forces specific application to open file
-	
-	run without arguments for full help
+			illus - Illustrator
+			word - Word
+			excel - Excel
+			tw - TextWrangler
+			prev - Preview\n
+			
+		-help display this help
+			
+	run without arguments for additional help
 
 =head1 AUTHOR
 
@@ -24,12 +31,13 @@ a wrapper for the Mac OSX command open
 
 automatically determines what file types are to be opened
 executes command to open up file with a GUI application
-run without options to get help
+run without options to get help or use -help
 
 =cut
 
 my $force;
-
+my $help;
+my $man;
 #there shoudl be a better way of doing this elegantly
 my @arrayofhashes = definehashes();
 my %applications = %{$arrayofhashes[0]};
@@ -37,14 +45,21 @@ my %forces = %{$arrayofhashes[1]};
 
 ### if run without filename or options, give help
 if (@ARGV == 0) {
+	print "\n\n";
 	printhelp();
 	exit;
 	};
 
 ##gather command line options
-GetOptions ("-force=s" => \$force);
+GetOptions (
+	"-force=s" => \$force,
+	"help|?" => \$help,
+	"man" => \$man,
+	);
 
-
+pod2usage() if $help;
+pod2usage(-verbose => 2) if $man;
+    
 #anything left on command line is the file
 my $filename = shift @ARGV;
 
@@ -59,7 +74,6 @@ $filename = cleanfilename($filename);
 ###parse filename to look for extension
 my $extension = getextension($filename);
 $extension = fixextension($extension);
-print $filename;
 
 print "Extension is: $extension\n";
 
