@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 use Getopt::Long;
-use Pod::Usage;  #implement this later
+use Pod::Usage;  #a crude 1st attempt at implementation of this
 
 =head1 NAME
 openfile.pl    
@@ -11,17 +11,16 @@ openfile.pl
 openfile.pl [options] [file]
 
 	Options:
-		-force	forces specific application to open file
-			illus - Illustrator
-			word - Word
-			excel - Excel
-			tw - TextWrangler
-			prev - Preview\n
+	-force	forces specific application to open file
+		illus - Illustrator
+		word - Word
+		excel - Excel
+		tw - TextWrangler
+		prev - Preview
 			
-		-help display this help
+	-help display this help
+	-man display full man page
 			
-	run without arguments for additional help
-
 =head1 AUTHOR
 
 Stephen Gross, 2013
@@ -45,8 +44,7 @@ my %forces = %{$arrayofhashes[1]};
 
 ### if run without filename or options, give help
 if (@ARGV == 0) {
-	print "\n\n";
-	printhelp();
+	pod2usage();
 	exit;
 	};
 
@@ -65,6 +63,7 @@ my $filename = shift @ARGV;
 
 unless (-e $filename) {
 	print "I can't find file $filename\n";
+	pod2usage();
 	exit;
 	};
 
@@ -83,7 +82,7 @@ if ($force) {
 	 	print "Forcing $forces{$force} to open $filename\n";
 	 	} else {
 	 	print "ERROR: I can't recognize -force $force\n";
-	 	printhelp();
+	 	pod2usage();
 	 	exit;
 	 	};
 	} else { #force setting not used
@@ -116,18 +115,6 @@ sub fixextension {
 	return $extension;
 	};
 	
-sub printhelp {
-	print "\nAutomatically opens appropriate GUI application to open file.\n";
-	print "OPTIONS:\n";
-	print "\t-force <application name>\tforces specific application to open file\n";
-	print "\tForces are:\n";
-	print "\t\tillus - Illustrator\n";
-	print "\t\tword - Word\n";
-	print "\t\texcel - Excel\n";
-	print "\t\ttw - TextWrangler\n";
-	print "\t\tprev - Preview\n";
-	print "\n";
-	};
 
 sub definehashes {
 	my %applications = (
