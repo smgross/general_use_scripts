@@ -37,7 +37,10 @@ run without options to get help or use -help
 my $force;
 my $help;
 my $man;
-#there shoudl be a better way of doing this elegantly
+
+
+#there should be a better way of doing this elegantly
+#get hashes from those in the subroutine definehashes()
 my @arrayofhashes = definehashes();
 my %applications = %{$arrayofhashes[0]};
 my %forces = %{$arrayofhashes[1]};
@@ -48,7 +51,7 @@ if (@ARGV == 0) {
 	exit;
 	};
 
-##gather command line options
+##gather command line options and interpret; also using pod2usage
 GetOptions (
 	"-force=s" => \$force,
 	"help|?" => \$help,
@@ -61,12 +64,14 @@ pod2usage(-verbose => 2) if $man;
 #anything left on command line is the file
 my $filename = shift @ARGV;
 
+#make sure the file exists
 unless (-e $filename) {
 	print "I can't find file $filename\n";
 	pod2usage();
 	exit;
 	};
 
+#send $filename to cleanfilename to properly escape spaces in filenames
 $filename = cleanfilename($filename);
 
 
