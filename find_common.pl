@@ -1,23 +1,60 @@
-#!/jgi/tools/bin/perl -w
+#!/usr/bin/perl -w
 use strict;
 use Statistics::R;
 use Getopt::Long;
+use Pod::Usage;
 
-=usage
-FIND COMMON ELEMENTS IN A NUMBER OF LISTS
-@ARGV contains any number of files with a list of elements, one per line.
-ONLY the first word on each line is used, the rest is ignored
+=head1 NAME
+find_common.pl
+=head1 SYNOPSIS
+find_common.pl  FIND COMMON ELEMENTS IN A NUMBER OF LISTS
+
+find_common.pl [options] [FILES]
+
+NOTE: 
+	Input files MUST be formatted with 1 entry per line. Whitespace surrounding
+	strings will be ignored. 
+
+Options:
+	-col1 TRUE or FALSE   default = FALSE  
+			split lines on space characters and use only the 1st word
+	-suppress  TRUE or FALSE  default = TRUE
+			print all output files.
+			if TRUE, only provides the number of common elements
+			
+	-man display full manual and information
+	-help what you see here
+
+Output file(s) will be named by combining names of input files
+=head1 DESCRIPTION
+
+determines the common items (union) between 2 or more files
+input file(s) format: 1 item per line. Whitespace is ignored.
+
+
+=head1 AUTHOR
+Stephen Gross    smgross@mac.com
+2011-2013
 =cut
 
 my $suppress = "FALSE";
 my $col1 = "FALSE";
-my $randomnumber = int(rand(1000));
+my $help;
+my $man;
 
 GetOptions (
 	"suppress=s" => \$suppress,
 	"col1=s" => \$col1,
+	"help|?" => \$help,
+	"man" => \$man,
 	);
 
+#Implement pod2usage to display help or manual	
+pod2usage() if $help;
+pod2usage(-verbose => 2) if $man;
+
+
+#parse options
 if ($suppress =~ m/T/gi) {
 	$suppress = "TRUE";
 	} else {
@@ -31,15 +68,8 @@ if ($col1 =~ m/T/gi) {
 	};
 
 my @infiles = @ARGV;
-if (@infiles == 0) {
-	print "---------------------------------------------------------------------------------------------------\n";
-	print "find_common3.pl\nUsage:\n\tEnter in two or more files with a list of terms on the command line, with one term per line.\n";
-	print "\tThis will compare the items in each of the files and produce a list of common terms as well as tables\n";
-	print "\tformatted for import into R to produce Venn diagrams.\n";
-	print "\tif 5 or fewer groups are compared, I will automatically make a Venn diagram (requires R and gplots package)\n\n";
-	print "\nOPTIONS\n";
-	print "\t-suppress [TRUE or FALSE] Default = FALSE. If TRUE, reports only the number of common items.\n";
-	print "\t-col1 [TRUE or FALSE] Default = FALSE. If TRUE, input files are split by space, only first word is used for comparisons\n";
+if (@infiles < 2) {
+	pod2usage(-verbose => 2);
 	exit;
 	};
 	
@@ -48,81 +78,25 @@ foreach (@infiles) {
 	if (-e $_) { 
 		#do nothing
 		} else {
-		die "ERROR: I can't find the file $_. Make sure the file exists and name is spelled correctly.";
+		print "ERROR: I can't find the file $_. Make sure the file exists and name is spelled correctly.";
+		pod2usage();
+		exit;
 		};
 	};
 
 
-my @masterarray;
+my @masterarray = readfiles(@infiles);
+my %hashofvalues = parse_masterarray(@masterarray);
+my $allcommoncounter = countcommonvalues(\%hashofvalues, \@infiles);
 
-print "Reading files... \n";
-my $files = 0;
-for (my $i = 0 ; $i < @infiles ; $i++) {
-        open IN, $infiles[$i];
-        my %filehash;
-        while (my $line = <IN>) {
-                chomp $line;
-                if ($line =~ m/^\s*$/) {next}; #skip blank lines
-                my $comparator;
-                if ($col1 eq "TRUE") {
-                	print "\rSplitting line and recording the first item";
-                	my @splitline = split (/\s+/, $line);
-                	$comparator = $splitline[0];
-                	} else {
-                	print "\rRecording the entire line as an entry";
-                	$comparator = $line;
-                	};
-                $filehash{$comparator} = 0;
-                };
-        my $filehashref = \%filehash;
-        push (@masterarray, $filehashref);
-        close IN;
-        };
-        
-print "\n...done.\n";
-my $filenumber = scalar (@masterarray);
-my %hashofvalues;
-my %binaryhash;
+print "There are $allcommoncounter items common between the input files\n";
 
-print "Working...\n";
-for (my $i = 0 ; $i < @masterarray ; $i++) {
-	my $filenum = $i + 1;
-	while (my ($key, $value) = each %{$masterarray[$i]}) {
-		print "\r\tFile $filenum ($infiles[$i]), list item $key";
-		my $checkvalue = $key; 
-		for (my $k = 0 ; $k < @masterarray ; $k++) {
-			if (exists $masterarray[$k]{$checkvalue}) {
-				if (exists $hashofvalues{$checkvalue}) {
-					my %temp = %{$hashofvalues{$checkvalue}};
-					$temp{$k} = 0;
-					my $tempref = \%temp;
-					$hashofvalues{$checkvalue} = $tempref;
-					} else {
-					my %temp;
-					$temp{$k} = 0;
-					my $tempref = \%temp;
-					$hashofvalues{$checkvalue} = $tempref;
-					};
-				}; 
-			}; 
-		};
-	};
-
-
-my $allcommoncounter = 0;
-while (my ($k, $v) = each %hashofvalues) {
-	if (keys %$v == $filenumber) {
-		$allcommoncounter++;
-		};
-	};
-	
+=stop	
 if ($suppress eq "FALSE") {	
-	print "\n...done... tidying up and creating output files...\n";
-	
-	#my $tabfile = join("_", @infiles) . "_tab.txt";
-	my $tabfile = "tab_$randomnumber".".txt";
-	#my $TFfile = join("_", @infiles) ."_TF.txt";
-	my $TFfile = "TF_$randomnumber".".txt";
+	my $outputfilename = join ("_", @infiles);
+	my $tabfile = $outputfilename . "_tab.txt";
+	my $TFfile = join("_", @infiles) ."_TF.txt";
+	my $TFfile = "TF_$tabfile".".txt";
 	open TAB, ">$tabfile";
 	open TF, ">$TFfile";
 	
@@ -162,7 +136,7 @@ if ($suppress eq "FALSE") {
 		};
 	
 	
-	my $binaryfile = "binary_$randomnumber".".txt";
+	my $binaryfile = "binary_$tabfile".".txt";
 	open BINARY, ">$binaryfile";
 	print BINARY "binary\tcount\t". join ("\t", @infiles)."\n";
 	while (my ($k, $v) = each %binaryhash) {
@@ -171,7 +145,7 @@ if ($suppress eq "FALSE") {
 		print BINARY join("\t", @splitk) ."\n";
 		};
 		
-	my $outfile = "commonitems_$randomnumber".".txt";
+	my $outfile = "commonitems_$tabfile".".txt";
 	open OUT, ">$outfile";
 	
 	my $allcommoncounter = 0;
@@ -205,14 +179,64 @@ if ($suppress eq "FALSE") {
 	};
 
 
-
-print "\n---------------------------------FINISHED--------------------------------------\n";
+print "\nFINISHED\n";
 print "There are $allcommoncounter items in the list common to all the input files: \n\t" . join ("\n\t", @infiles) ."\n";
 if ($suppress eq "FALSE") {
-	
 	if (-e "venn_plot.pdf") {
 		print "Open file venn_plot.pdf to see a Venn diagram from the gplots package\n";
 		};
 	};
-print "-------------------------------------------------------------------------------\n";
 
+=cut
+
+
+###	Subroutines	####
+
+
+sub readfiles {
+	my @infiles = @_;
+	#for each of the infiles, break it into a hash; load each of those hashes into @masterarray
+	for (my $i = 0 ; $i < @infiles ; $i++) {
+        open IN, $infiles[$i];
+        my %filehash;
+        while (my $line = <IN>) {
+			chomp $line;
+			$line =~ s/^\s+//; #remove leading whitespace
+			$line =~ s/\s+$//; #remove trailing whitespace
+			if ($line =~ m/^\s*$/) {next}; #skip blank lines
+			$filehash{$line}++;
+			};
+        push (@masterarray, \%filehash);
+        close IN;
+        };
+    return @masterarray;
+	};
+
+sub parse_masterarray {
+	my @masterarray = @_;
+	my %unionhash;
+	for (my $i = 0 ; $i < @masterarray ; $i++) {  		#for file i in @masterarray
+		for my $line_i (keys %{$masterarray[$i]}) {  		#for every line in file i
+			for (my $j = 0 ; $j < @masterarray ; $j++) { 	#compare it to file j in @Masterarray
+				if (exists $masterarray[$j]{$line_i}) {   	#see if the line of file i exists in file k
+					$unionhash{$line_i}{$j}++;     #this is saying line in file i exists in file j X number of times   		
+					}; 
+				}; 
+			};
+		};
+	return %unionhash;
+	};
+
+sub countcommonvalues {
+	my %unionhash = %{$_[0]};
+	my @infiles = @{$_[1]};
+	my $allcommoncounter = 0;
+	for my $line (keys %unionhash) {
+		#if the number of separate files in which 'line' was observed is equal to the number of input files
+		if ( keys (%{$unionhash{$line}}) == scalar (@infiles)) {  
+			$allcommoncounter++;
+			};	
+		};
+	return $allcommoncounter;
+	};
+	
