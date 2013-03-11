@@ -140,6 +140,7 @@ sub definehashes {
 		".png" => "Preview",
 		".pl" => "TextWrangler",
 		".py" => "TextWrangler",
+		".csv" => "Microsoft\\ Excel",
 		);
 
 	##### here, add a hash for the forces
@@ -155,6 +156,10 @@ sub definehashes {
 
 sub cleanfilename {
 	my $filename = shift;
-	$filename =~ s/ /\\ /gi;
+	#escape spaces
+	$filename =~ s/ /\\ /g;
+	#escape parenthesis
+	$filename =~ s/\(/\\\(/g;
+	$filename =~ s/\)/\\\)/g;
 	return $filename;
 	};	
