@@ -37,14 +37,14 @@ Stephen Gross    smgross@mac.com
 2011-2013
 =cut
 
-my $suppress = "FALSE";
-my $col1 = "FALSE";
+my $suppress = "TRUE";
+my $venn = "FALSE";
 my $help;
 my $man;
 
 GetOptions (
 	"suppress=s" => \$suppress,
-	"col1=s" => \$col1,
+	"venn=s" => \$venn,
 	"help|?" => \$help,
 	"man" => \$man,
 	);
@@ -61,10 +61,10 @@ if ($suppress =~ m/T/gi) {
 	$suppress = "FALSE";
 	};
 
-if ($col1 =~ m/T/gi) {
-	$col1 = "TRUE";
+if ($venn =~ m/T/gi) {
+	$venn = "TRUE";
 	} else {
-	$col1 = "FALSE";
+	$venn = "FALSE";
 	};
 
 my @infiles = @ARGV;
@@ -79,7 +79,6 @@ foreach (@infiles) {
 		#do nothing
 		} else {
 		print "ERROR: I can't find the file $_. Make sure the file exists and name is spelled correctly.";
-		pod2usage();
 		exit;
 		};
 	};
@@ -90,6 +89,12 @@ my %hashofvalues = parse_masterarray(@masterarray);
 my $allcommoncounter = countcommonvalues(\%hashofvalues, \@infiles);
 
 print "There are $allcommoncounter items common between the input files\n";
+
+if ($suppress eq "FALSE") {
+	my $outfilemain = outfilemainname (@infiles);
+	print "Outfile main name core is:\t$outfilemain\n";
+	};
+	
 
 =stop	
 if ($suppress eq "FALSE") {	
@@ -179,13 +184,6 @@ if ($suppress eq "FALSE") {
 	};
 
 
-print "\nFINISHED\n";
-print "There are $allcommoncounter items in the list common to all the input files: \n\t" . join ("\n\t", @infiles) ."\n";
-if ($suppress eq "FALSE") {
-	if (-e "venn_plot.pdf") {
-		print "Open file venn_plot.pdf to see a Venn diagram from the gplots package\n";
-		};
-	};
 
 =cut
 
@@ -239,4 +237,18 @@ sub countcommonvalues {
 		};
 	return $allcommoncounter;
 	};
-	
+
+sub outfilemainname {
+	#This just picks a string from the input file names and creates a main string to be used as 
+	#  the core for the output file names
+	my @infiles = @_;
+	my $outfilemainname = join ("_", @infiles);
+	if (length ($outfilemainname) > 25) {
+		$outfilemainname =~ m/^(.{10})/;
+		my $part1 = $1;
+		$outfilemainname =~ /(.{10})$/;
+		my $part2 = $1;
+		$outfilemainname = "$part1".".."."$part2";
+		};
+	return $outfilemainname;
+	};
