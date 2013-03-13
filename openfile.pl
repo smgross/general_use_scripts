@@ -5,53 +5,33 @@ use Pod::Usage;  #a crude 1st attempt at implementation of this
 
 =head1 NAME
 
-openfile.pl    
+openfile.pl  - A wrapper for the Mac OSX 'open' command
 
 =head1 SYNOPSIS
 
-openfile.pl [options] [file]
+openfile.pl [options] <file>
 
-=over 4
+	Options:
+	-force	forces specific application to open file
+		forces are:
+			illus - Illustrator
+			word - Word
+			excel - Excel
+			tw - TextWrangler
+			prev - Preview
 
-=item
+	-help display quick help (you're looking at it)
+	-man display full manual page
 
-A wrapper for the Mac OSX 'open' command
-
-Options:
-
-=item
-
--force	forces specific application to open file
-
-=over 4
-
-=item
-	illus - Illustrator
-	word - Word
-	excel - Excel
-	tw - TextWrangler
-	prev - Preview
-
-=back
-=item
-	
--help display this help
-
-=item
-
--man display full man page
-
-
-	
 =head1 AUTHOR
 
-Stephen Gross, 2013
+	Stephen Gross, 2013
 
 =head1 DESCRIPTION
 
-automatically determines what file types are to be opened
-executes command to open up file with a GUI application
-run without options to get help or use -help
+	automatically determines what file types are to be opened
+	executes command to open up file with a GUI application
+	run without options to get help or use -help
 
 =cut
 
