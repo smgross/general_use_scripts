@@ -4,27 +4,48 @@ use Getopt::Long;
 use Pod::Usage;  #a crude 1st attempt at implementation of this
 
 =head1 NAME
+
 openfile.pl    
 
 =head1 SYNOPSIS
 
 openfile.pl [options] [file]
 
-	Options:
-	-force	forces specific application to open file
-		illus - Illustrator
-		word - Word
-		excel - Excel
-		tw - TextWrangler
-		prev - Preview
-			
-	-help display this help
-	-man display full man page
-			
+=over 4
+
+=item
+
+A wrapper for the Mac OSX 'open' command
+
+Options:
+
+=item
+
+-force	forces specific application to open file
+
+=over 4
+
+=item
+	illus - Illustrator
+	word - Word
+	excel - Excel
+	tw - TextWrangler
+	prev - Preview
+
+=back
+=item
+	
+-help display this help
+
+=item
+
+-man display full man page
+
+
+	
 =head1 AUTHOR
 
 Stephen Gross, 2013
-a wrapper for the Mac OSX command open
 
 =head1 DESCRIPTION
 
