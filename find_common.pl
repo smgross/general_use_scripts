@@ -126,6 +126,9 @@ if ($suppress eq "FALSE") {
 	my $allcommoncounter = commonfile($commonfh, \%hashofvalues);
 	close $commonfh;	
 	
+	
+	
+	####remainder is the binary file
 	my $binaryhashstring = join("", @foundarray);
 	
 	if (exists $binaryhash{$binaryhashstring}) {
@@ -135,10 +138,7 @@ if ($suppress eq "FALSE") {
 		} else {
 		$binaryhash{$binaryhashstring} = 1;
 		};
-		
-
-	
-	
+			
 	while (my ($k, $v) = each %binaryhash) {
 		print BINARY "$k\t$v\t";
 		my @splitk = split (//, $k);
@@ -149,13 +149,13 @@ if ($suppress eq "FALSE") {
 	
 
 
-	#print the Venn diagram, if requested	
+	#create and print the Venn diagram, if requested	
 	if (@infiles <= 5 && $venn =~ m/T/gi) {	
 		my $code = buildvenn($TFfile);
 		if ($code == 0) {
 			print "There was an unknown error building the Venn diagram\n";
 			};
-			
+		};
 	};
 		
 
