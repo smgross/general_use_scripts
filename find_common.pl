@@ -100,62 +100,43 @@ print "There are $allcommoncounter items common between the input files\n";
 if ($suppress eq "FALSE") {
 	#build outfile names
 	my $outfilemain = outfilemainname (@infiles);
-	my $TFfile = "$outfilemain"."_tf.txt";
-	my $tabfile = "$outfilemain"."_tab.txt";
-	my $binaryfile = "$outfilemain"."_binary.txt";
-	my $commonfile = "$outfilemain"."_common_items.txt";
+	my ($TFfile, $tabfile, $binaryfile, $commonfile) = createfilenames($outfilemain);
 	
 	print "Outfile main name core is:\t$outfilemain\n";
 	
 	#open filehandles for the 4 outfiles
-	open TAB, ">$tabfile";
-	open TF, ">$TFfile";
-	open BINARY, ">$binaryfile";
-	open COMMON, ">$commonfile";
+	#using lexical filehandles to pass to subroutines
+	open my $tabfh, ">$tabfile"; #tab separated values
+	open my $TFfh, ">$TFfile";  #boolean values
+	open my $binaryfh, ">$binaryfile"; #presence/absence coded in 1 and 0's
+	open my $commonfh, ">$commonfile"; #flat list of common elements
 
 	#print headers on the 3 tabulated outfiles
-	print TAB "item\t" . join ("\t", @infiles) . "\n";
-	print TF "item\t" . join ("\t", @infiles)."\n";
-	print BINARY "binary\tcount\t". join ("\t", @infiles)."\n";
+	print $tabfh "item\t" . join ("\t", @infiles) . "\n";
+	print $TFfh "item\t" . join ("\t", @infiles). "\n";
+	print $binaryfh "binary\tcount\t". join ("\t", @infiles)."\n";
 
-
-
+	#print the TAB and TF files, then close the file handles
+	createfile($tabfh, \%hashofvalues, "tab");
+	createfile($TFfh, \%hashofvalues, "boolean");
+	close $tabfh;
+	close $TFfh;
+		
+	#print the common file, count the number of common values
+	my $allcommoncounter = commonfile($commonfh, \%hashofvalues);
+	close $commonfh;	
 	
-	while (my ($k, $v) = each %hashofvalues) {
-		print TAB "$k\t";
-		print TF "$k\t";
-		my @foundarray;
-		for (my $i = 0; $i < @infiles ; $i++) {
-			if (exists $hashofvalues{$k}{$i}) {
-				push (@foundarray, 1);
-				} else {
-				push (@foundarray, 0);
-				};
-			}; 
-			
-		my $binaryhashstring = join("", @foundarray);
-		
-		if (exists $binaryhash{$binaryhashstring}) {
-			my $value = $binaryhash{$binaryhashstring};
-			$value++;
-			$binaryhash{$binaryhashstring} = $value;
-			} else {
-			$binaryhash{$binaryhashstring} = 1;
-			};
-			
-		print TAB join ("\t", @foundarray) . "\n";
-		
-		my @foundarray2;
-		for (my $i = 0; $i<@foundarray; $i++) {
-			if ($foundarray[$i] == 1) {
-				$foundarray2[$i] = "TRUE";
-				};
-			if ($foundarray[$i] == 0) {
-				$foundarray2[$i] = "FALSE";
-				};
-			};
-		print TF join ("\t", @foundarray2) . "\n";
+	my $binaryhashstring = join("", @foundarray);
+	
+	if (exists $binaryhash{$binaryhashstring}) {
+		my $value = $binaryhash{$binaryhashstring};
+		$value++;
+		$binaryhash{$binaryhashstring} = $value;
+		} else {
+		$binaryhash{$binaryhashstring} = 1;
 		};
+		
+
 	
 	
 	while (my ($k, $v) = each %binaryhash) {
@@ -165,19 +146,16 @@ if ($suppress eq "FALSE") {
 		};
 		
 	
-	my $allcommoncounter = 0;
-	while (my ($k, $v) = each %hashofvalues) {
-		if (keys %$v == $filenumber) {
-			print OUT "$k\n";
-			$allcommoncounter++;
-			};
-		};
 	
-if (@infiles <= 5 && $venn =~ m/T/gi) {	
-	my $code = buildvenn($TFfile);
-	if ($code == 0) {
-		print "There was an unknown error building the Venn diagram\n";
-		};
+
+
+	#print the Venn diagram, if requested	
+	if (@infiles <= 5 && $venn =~ m/T/gi) {	
+		my $code = buildvenn($TFfile);
+		if ($code == 0) {
+			print "There was an unknown error building the Venn diagram\n";
+			};
+			
 	};
 		
 
@@ -211,11 +189,11 @@ sub readfiles {
 sub parse_masterarray {
 	my @masterarray = @_;
 	my %unionhash;
-	for (my $i = 0 ; $i < @masterarray ; $i++) {  		#for file i in @masterarray
+	for (my $i = 0 ; $i < @masterarray ; $i++) {  			#for file i in @masterarray
 		for my $line_i (keys %{$masterarray[$i]}) {  		#for every line in file i
 			for (my $j = 0 ; $j < @masterarray ; $j++) { 	#compare it to file j in @Masterarray
 				if (exists $masterarray[$j]{$line_i}) {   	#see if the line of file i exists in file k
-					$unionhash{$line_i}{$j}++;     #this is saying line in file i exists in file j X number of times   		
+					$unionhash{$line_i}{$j}++;     			#this is saying line in file i exists in file j X number of times   		
 					}; 
 				}; 
 			};
@@ -269,4 +247,53 @@ sub buildvenn {
 	$R->run(q`dev.off()`);
 	$R->stop();
 	return 1;
+	};
+	
+sub createfilenames {
+	my $outfilemain = shift;
+	my $TFfile = "$outfilemain"."_boolean.txt";
+	my $tabfile = "$outfilemain"."_tab.txt";
+	my $binaryfile = "$outfilemain"."_binary.txt";
+	my $commonfile = "$outfilemain"."_common_items.txt";
+	return ($TFfile, $tabfile, $binaryfile, $commonfile);
+	};
+
+sub createfile {
+	my ($fh, $hashofvaluesref, $type) = @_;  #where $fh = filehandle
+	
+	#depending on the type of output requested, fix the @markingvalues array
+	# 0 = FALSE, 1 = TRUE
+	my @markingvalues;
+	if ($type eq "tab") {
+		@markingvalues = ("FALSE","TRUE");
+		} elsif ($type eq "boolean") {
+		@markingvalues = (0,1);
+		};
+	
+	#write the output to the filehandle $fh
+	while (my ($line, $filename) = each %{$hashofvaluesref}) {
+		print $fh "$line\t";
+		my @foundarray;
+		for (my $i = 0; $i < @infiles ; $i++) {
+			if (exists $hashofvalues{$line}{$i}) {
+				push (@foundarray, $markingvalues[1]);
+				} else {
+				push (@foundarray, $markingvalues[0]);
+				};
+			}; 
+		print $tf join ("\t", @foundarray) . "\n";
+		};
+		return;
+	};
+
+sub commonfile {
+	my ($fh, $hashofvalues) = @_;
+	my $allcommoncounter = 0;
+	while (my ($k, $v) = each %{$hashofvalues}) {
+		if (keys %$v == $filenumber) {
+			print $commonfh "$k\n";
+			$allcommoncounter++;
+			};
+		};
+	return $allcommoncounter;
 	};
