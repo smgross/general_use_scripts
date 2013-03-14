@@ -106,6 +106,8 @@ exit;
 #####
 # SUBROUTINES
 ######
+
+
 sub getextension {
 	my $filename = shift;
 	my @fileparts = split (/\./, $filename);
@@ -121,7 +123,6 @@ sub fixextension {
 	return $extension;
 	};
 	
-
 sub definehashes {
 	my %applications = (
 		".doc" => "Microsoft\\ Word",
