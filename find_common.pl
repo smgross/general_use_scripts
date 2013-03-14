@@ -5,36 +5,43 @@ use Getopt::Long;
 use Pod::Usage;
 
 =head1 NAME
-find_common.pl
+
+	find_common.pl - FIND COMMON ELEMENTS IN A NUMBER OF LISTS
+	
 =head1 SYNOPSIS
-find_common.pl  FIND COMMON ELEMENTS IN A NUMBER OF LISTS
+	
+	find_common.pl [options] <FILES>
 
-find_common.pl [options] [FILES]
+	IMPORTANT NOTE ON INPUT FILES:
+		Input files MUST be formatted with 1 entry per line. 
+		Lines are split by whitespace. No whitespace characters are allowed!!!!
+		Whitespace surrounding strings will be ignored. 
 
-NOTE: 
-	Input files MUST be formatted with 1 entry per line. Whitespace surrounding
-	strings will be ignored. 
+	OUTPUT FILE(S):
+		Output file(s) will be named by combining names of input files
 
-Options:
-	-col1 TRUE or FALSE   default = FALSE  
-			split lines on space characters and use only the 1st word
-	-suppress  TRUE or FALSE  default = TRUE
-			print all output files.
-			if TRUE, only provides the number of common elements
-			
-	-man display full manual and information
-	-help what you see here
+	Options:
+	-suppress	TRUE or FALSE  [default = TRUE] (T/F OK)
+				print all output files.
+				if TRUE, only provides the number of common entries
+				
+	-venn		TRUE or FALSE [default = FALSE] to produce Venn diagram (T/F OK)	
+	
+	-man 		display full manual and information
+	
+	-help 		you're looking at it
 
-Output file(s) will be named by combining names of input files
+
 =head1 DESCRIPTION
 
-determines the common items (union) between 2 or more files
-input file(s) format: 1 item per line. Whitespace is ignored.
-
+	determines the common items (union) between 2 or more files
+	input file(s) format: 1 item per line. Whitespace is ignored.
 
 =head1 AUTHOR
-Stephen Gross    smgross@mac.com
-2011-2013
+
+	Stephen Gross    smgross@mac.com
+	2011-2013
+	
 =cut
 
 my $suppress = "TRUE";
@@ -45,7 +52,7 @@ my $man;
 GetOptions (
 	"suppress=s" => \$suppress,
 	"venn=s" => \$venn,
-	"help|?" => \$help,
+	"help|?|h" => \$help,
 	"man" => \$man,
 	);
 
@@ -69,7 +76,7 @@ if ($venn =~ m/T/gi) {
 
 my @infiles = @ARGV;
 if (@infiles < 2) {
-	pod2usage(-verbose => 2);
+	pod2usage();
 	exit;
 	};
 	
@@ -91,23 +98,29 @@ my $allcommoncounter = countcommonvalues(\%hashofvalues, \@infiles);
 print "There are $allcommoncounter items common between the input files\n";
 
 if ($suppress eq "FALSE") {
+	#build outfile names
 	my $outfilemain = outfilemainname (@infiles);
-	print "Outfile main name core is:\t$outfilemain\n";
-	};
+	my $TFfile = "$outfilemain"."_tf.txt";
+	my $tabfile = "$outfilemain"."_tab.txt";
+	my $binaryfile = "$outfilemain"."_binary.txt";
+	my $commonfile = "$outfilemain"."_common_items.txt";
 	
-
-=stop	
-if ($suppress eq "FALSE") {	
-	my $outputfilename = join ("_", @infiles);
-	my $tabfile = $outputfilename . "_tab.txt";
-	my $TFfile = join("_", @infiles) ."_TF.txt";
-	my $TFfile = "TF_$tabfile".".txt";
+	print "Outfile main name core is:\t$outfilemain\n";
+	
+	#open filehandles for the 4 outfiles
 	open TAB, ">$tabfile";
 	open TF, ">$TFfile";
-	
-	
+	open BINARY, ">$binaryfile";
+	open COMMON, ">$commonfile";
+
+	#print headers on the 3 tabulated outfiles
 	print TAB "item\t" . join ("\t", @infiles) . "\n";
 	print TF "item\t" . join ("\t", @infiles)."\n";
+	print BINARY "binary\tcount\t". join ("\t", @infiles)."\n";
+
+
+
+	
 	while (my ($k, $v) = each %hashofvalues) {
 		print TAB "$k\t";
 		print TF "$k\t";
@@ -119,7 +132,9 @@ if ($suppress eq "FALSE") {
 				push (@foundarray, 0);
 				};
 			}; 
+			
 		my $binaryhashstring = join("", @foundarray);
+		
 		if (exists $binaryhash{$binaryhashstring}) {
 			my $value = $binaryhash{$binaryhashstring};
 			$value++;
@@ -127,7 +142,9 @@ if ($suppress eq "FALSE") {
 			} else {
 			$binaryhash{$binaryhashstring} = 1;
 			};
+			
 		print TAB join ("\t", @foundarray) . "\n";
+		
 		my @foundarray2;
 		for (my $i = 0; $i<@foundarray; $i++) {
 			if ($foundarray[$i] == 1) {
@@ -141,17 +158,12 @@ if ($suppress eq "FALSE") {
 		};
 	
 	
-	my $binaryfile = "binary_$tabfile".".txt";
-	open BINARY, ">$binaryfile";
-	print BINARY "binary\tcount\t". join ("\t", @infiles)."\n";
 	while (my ($k, $v) = each %binaryhash) {
 		print BINARY "$k\t$v\t";
 		my @splitk = split (//, $k);
 		print BINARY join("\t", @splitk) ."\n";
 		};
 		
-	my $outfile = "commonitems_$tabfile".".txt";
-	open OUT, ">$outfile";
 	
 	my $allcommoncounter = 0;
 	while (my ($k, $v) = each %hashofvalues) {
@@ -161,31 +173,17 @@ if ($suppress eq "FALSE") {
 			};
 		};
 	
-	my $answer;
-	if (@infiles <=5) {	
-		print "Would you like a Venn diagram? [Y/N]: ";
-		$answer = <STDIN>;
-		chomp $answer;
-		if ($answer =~ m/Y/gi) {
-			print "Working on Venn diagram... please wait....\n";
-			my $R = Statistics::R->new();
-			$R->start();
-			$R->set('filename', $TFfile);
-			$R->run(q`library(gplots)`);
-			$R->run(q`data<-read.table(file = filename, header = T, sep = "\t")`);
-			$R->run(q`rownames(data)<-data$item`);
-			$R->run(q`data<-data[,-1]`);
-			$R->run(q`pdf(file = "venn_plot.pdf")`);
-			$R->run(q`venn(data)`);
-			$R->run(q`dev.off()`);
-			$R->stop();
-			};
+if (@infiles <= 5 && $venn =~ m/T/gi) {	
+	my $code = buildvenn($TFfile);
+	if ($code == 0) {
+		print "There was an unknown error building the Venn diagram\n";
 		};
 	};
+		
 
 
 
-=cut
+
 
 
 ###	Subroutines	####
@@ -251,4 +249,24 @@ sub outfilemainname {
 		$outfilemainname = "$part1".".."."$part2";
 		};
 	return $outfilemainname;
+	};
+
+sub buildvenn {
+	my $TFfile = shift;
+	unless (-e $TFfile) {
+		return 0;
+		};
+	print "Working on Venn diagram... please wait....\n";
+	my $R = Statistics::R->new();
+	$R->start();
+	$R->set('filename', $TFfile);
+	$R->run(q`library(gplots)`);
+	$R->run(q`data<-read.table(file = filename, header = T, sep = "\t")`);
+	$R->run(q`rownames(data)<-data$item`);
+	$R->run(q`data<-data[,-1]`);
+	$R->run(q`pdf(file = "venn_plot.pdf")`);
+	$R->run(q`venn(data)`);
+	$R->run(q`dev.off()`);
+	$R->stop();
+	return 1;
 	};
