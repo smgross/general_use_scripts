@@ -10,11 +10,15 @@ use Pod::Usage;
 	
 =head1 SYNOPSIS
 	
+	getmd5sums.pl  [OPTIONS] <FILEs> Get md5 checksums for files
+	
 	Options: 
 		-dir	get md5sums for all files in directory (. for cwd)
 		-man	display full help
 		-help	display quick help (you're looking at it)
 
+	NOTE: CURRENTLY ONLY WORKS ON LINUX SYSTEMS. WILL ADD SUPPORT FOR MAC LATER...
+	
 =head1 AUTHOR
 	
 	Stephen Gross  smgross@lbl.gov  2013
