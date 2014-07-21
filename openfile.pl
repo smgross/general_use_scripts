@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl -w
 use strict;
 use Getopt::Long;
 use Pod::Usage;  #a crude 1st attempt at implementation of this
