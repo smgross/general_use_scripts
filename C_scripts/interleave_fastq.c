@@ -30,8 +30,6 @@ int main (int argc, char *argv[])
 		read1 = fopen(first,"r");
 		read2 = fopen(second,"r");
 
-		int file1valid = 1;
-		int file2valid = 1;
 
 		while (1)
 		{
